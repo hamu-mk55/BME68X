@@ -21,22 +21,29 @@ def _set_level(level: str)->int:
         return WARNING
 
 
-def _set_format()->Formatter:
-    _date_fmt = '%m/%d,%H:%M:%S'
-    _fmt = '%(asctime)s,%(msecs)03d,[%(levelname).4s][%(funcName)s][%(lineno)d], %(message)s'
+def _set_format(date_fmt=None, fmt=None)->Formatter:
 
-    return Formatter(_fmt, datefmt=_date_fmt)
+    if date_fmt is None:
+        date_fmt = '%m/%d,%H:%M:%S'
+
+    if fmt is None:
+        fmt = '%(asctime)s,%(msecs)03d,[%(levelname).4s][%(funcName)s][%(lineno)d], %(message)s'
+
+    return Formatter(fmt, datefmt=date_fmt)
 
 
 def make_logger(log_dir: str = './log',
-                level: str = 'debug',
+                level: str = 'info',
                 file_name: str = 'mylogger',
                 console_out: bool = True,
                 file_out: bool = True,
+                use_time_rotate: bool = True,
+                date_fmt:str = None,
+                fmt:str = None,
                 logger_id: str = 'MyLogger') -> Logger:
     # Set logger
     log_level = _set_level(level)
-    log_formatter = _set_format()
+    log_formatter = _set_format(date_fmt=date_fmt, fmt=fmt)
 
     logger = getLogger(logger_id)
     logger.setLevel(log_level)
@@ -45,10 +52,15 @@ def make_logger(log_dir: str = './log',
     if file_out:
         os.makedirs(log_dir, exist_ok=True)
 
-        fh = handlers.TimedRotatingFileHandler(
-            f'{log_dir}/{file_name}.log',
-            when="MIDNIGHT"
-        )
+        log_file = f'{log_dir}/{file_name}.log'
+        if use_time_rotate:
+            fh = handlers.TimedRotatingFileHandler(
+                log_file,
+                when="MIDNIGHT"
+            )
+        else:
+            fh = FileHandler(log_file)
+
         fh.setLevel(log_level)
         fh.setFormatter(log_formatter)
         logger.addHandler(fh)
